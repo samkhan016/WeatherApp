@@ -1,117 +1,82 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useEffect, useState} from 'react';
+import {DefaultTheme, NavigationContainer} from '@react-navigation/native';
+import {createStackNavigator} from '@react-navigation/stack';
+import WeatherDetailsScreen from './src/screens/weatherDetailsScreen';
+import {MyTabs} from './src/routes';
+import {Image, Platform, StatusBar, StyleSheet} from 'react-native';
+import Colors from './src/assets/colors';
+import {widthPercentageToDP as wp} from 'react-native-responsive-screen';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const App = () => {
+  const [backgroundColor, setBackgroundColor] = useState(Colors.white); // Default to day mode
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  useEffect(() => {
+    const updateBackgroundColor = () => {
+      const currentHour = new Date().getHours();
+      if (currentHour >= 6 && currentHour < 18) {
+        setBackgroundColor(Colors.white); // Light color for day mode
+      } else {
+        setBackgroundColor(Colors.text_input); // Dark color for night mode
+      }
+    };
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+    updateBackgroundColor(); // Update immediately on mount
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+    const interval = setInterval(updateBackgroundColor, 60000); // Update every minute
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, []);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const Stack = createStackNavigator();
+  const MyTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: backgroundColor,
+    },
   };
-
   return (
-    <SafeAreaView style={backgroundStyle}>
+    <NavigationContainer theme={MyTheme}>
       <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+        barStyle={
+          backgroundColor == Colors.white && Platform.OS == 'android'
+            ? 'dark-content'
+            : 'light-content'
+        }
+        backgroundColor={backgroundColor}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <Stack.Navigator>
+        <Stack.Screen name="Tabs" options={{headerShown: false}}>
+          {() => <MyTabs backgroundColor={backgroundColor} />}
+        </Stack.Screen>
+        <Stack.Screen
+          name="WeatherDetails"
+          component={WeatherDetailsScreen}
+          options={{
+            headerTransparent: true,
+            headerTitle: '',
+            headerBackTitle: '',
+
+            headerBackImage: () => (
+              <Image
+                source={require('./src/assets/images/backIcon.png')}
+                style={styles.backIcon}
+              />
+            ),
+          }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  backIcon: {
+    left: Platform.OS == 'android' ? wp(0) : wp(2),
+    width: 24,
+    height: 24,
+    tintColor: Colors.white,
+    resizeMode: 'contain',
   },
 });
 
